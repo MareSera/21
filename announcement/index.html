@@ -1,0 +1,139 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Markdown班级公告</title>
+    <style>
+        /* 继承原有UI风格 */
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f0f9ff 0%, #cbebff 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .class-title {
+            color: #2c3e50;
+            font-size: 2.8em;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: 2px;
+        }
+
+        .notice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+            padding: 40px;
+            overflow: hidden;
+        }
+
+        /* Markdown内容样式 */
+        .markdown-body {
+            line-height: 1.8;
+            color: #4a5568;
+            font-size: 1.1em;
+        }
+
+        .markdown-body h1, 
+        .markdown-body h2, 
+        .markdown-body h3 {
+            color: #2c3e50;
+            border-bottom: 2px solid #f0f9ff;
+            padding-bottom: 0.3em;
+            margin: 1.5em 0 1em;
+        }
+
+        .markdown-body h1 { font-size: 2em; }
+        .markdown-body h2 { font-size: 1.6em; }
+        .markdown-body h3 { font-size: 1.4em; }
+
+        .markdown-body strong {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        .markdown-body ul {
+            padding-left: 30px;
+            margin: 15px 0;
+        }
+
+        .markdown-body li {
+            margin: 8px 0;
+            padding-left: 10px;
+        }
+
+        .markdown-body blockquote {
+            border-left: 4px solid #3498db;
+            padding: 10px 20px;
+            margin: 15px 0;
+            background: #f8f9fa;
+            color: #7f8c8d;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .notice-container {
+                padding: 25px;
+            }
+            
+            .class-title {
+                font-size: 2.2em;
+            }
+            
+            .markdown-body h1 { font-size: 1.8em; }
+            .markdown-body h2 { font-size: 1.5em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="class-title">📝公告板</h1>
+    </div>
+
+    <div class="notice-container">
+        <!-- Markdown内容区域 -->
+        <div class="markdown-body">
+<script type="text/markdown">
+# 📢 临时公告
+
+**发布日期：** 2025年4月18日      |     **发布人：** 刘宇桐    |     **分类：** 临时公告
+
+---
+## 暂无公告
+</script>
+        </div>
+    </div>
+
+    <!-- Markdown解析库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        // 自动解析Markdown
+        document.addEventListener('DOMContentLoaded', () => {
+            const mdContent = document.querySelector('script[type="text/markdown"]').textContent;
+            const htmlContent = marked.parse(mdContent);
+            document.querySelector('.markdown-body').innerHTML = htmlContent;
+            
+            // 添加样式到代码块
+            document.querySelectorAll('code').forEach(block => {
+                if (!block.className) {
+                    block.style.backgroundColor = '#f8f9fa';
+                    block.style.padding = '2px 5px';
+                    block.style.borderRadius = '4px';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

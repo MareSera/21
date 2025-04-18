@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>班级量化得分排名</title>
+    <style>
+        /* 保持原有样式不变 */
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f0f9ff 0%, #cbebff 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .class-title {
+            color: #2c3e50;
+            font-size: 2.8em;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: 2px;
+        }
+
+        .ranking-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+            padding: 40px;
+            overflow: hidden;
+        }
+
+        .sort-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .sort-btn {
+            padding: 12px 25px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sort-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52,152,219,0.3);
+        }
+
+        .student-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .student-item {
+            display: flex;
+            align-items: center;
+            padding: 18px 25px;
+            background: #f8fafc;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .student-item:hover {
+            transform: translateX(10px);
+            box-shadow: 0 4px 15px rgba(52,152,219,0.1);
+        }
+
+        .rank {
+            width: 60px;
+            font-weight: 600;
+            color: #3498db;
+            font-size: 1.1em;
+        }
+
+        .name {
+            flex: 1;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .score {
+            width: 100px;
+            text-align: right;
+            color: #27ae60;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        @media (max-width: 768px) {
+            .ranking-container {
+                padding: 25px;
+            }
+            
+            .student-item {
+                padding: 15px 20px;
+            }
+            
+            .class-title {
+                font-size: 2.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="class-title">🏫 2024级21班量化得分排名</h1>
+    </div>
+
+    <div class="ranking-container">
+        <div class="sort-buttons">
+            <button class="sort-btn" onclick="sortStudents('score')">
+                📊 分数排序
+            </button>
+            <button class="sort-btn" onclick="sortStudents('name')">
+                🔤 姓名排序
+            </button>
+        </div>
+
+        <div class="student-list" id="studentList"></div>
+    </div>
+
+    <script>
+        // 初始化数据
+        let students = [
+            { name: "张三", score: 92 },
+            { name: "李四", score: 88 },
+            { name: "王五", score: 85 },
+            { name: "陈六", score: 82 },
+            { name: "赵七", score: 79 }
+        ];
+
+        // 自动计算排名
+        function calculateRankings() {
+            // 创建分数副本并排序
+            const sortedScores = [...students]
+                .sort((a, b) => b.score - a.score)
+                .map(s => s.score);
+            
+            // 为每个学生添加排名
+            students.forEach(student => {
+                // 查找第一个小于等于当前分数的位置
+                const rank = sortedScores.findIndex(s => s <= student.score) + 1;
+                student.rank = rank;
+            });
+        }
+
+        // 渲染列表
+        function renderList() {
+            const list = document.getElementById('studentList');
+            list.innerHTML = students
+                .map(student => `
+                    <div class="student-item">
+                        <div class="rank">
+                            ${getRankEmoji(student.rank)} ${student.rank}
+                        </div>
+                        <div class="name">${student.name}</div>
+                        <div class="score">⭐ ${student.score}</div>
+                    </div>
+                `).join('');
+        }
+
+        // 获取排名emoji
+        function getRankEmoji(rank) {
+            return ['🥇', '🥈', '🥉'][rank - 1] || '🏅';
+        }
+
+        // 排序功能
+        function sortStudents(type) {
+            if(type === 'score'){
+                students.sort((a, b) => b.score - a.score);
+            } else {
+                students.sort((a, b) => a.name.localeCompare(b.name));
+            }
+            calculateRankings();
+            renderList();
+        }
+
+        // 初始化
+        calculateRankings();
+        sortStudents('score');
+    </script>
+</body>
+</html>

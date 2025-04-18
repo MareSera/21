@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>2024级21班班级主页</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f0f9ff 0%, #cbebff 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .class-title {
+            color: #2c3e50;
+            font-size: 2.8em;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .card-link {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            min-height: 180px;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+
+        .card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #3498db;
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover::after {
+            transform: scaleX(1);
+        }
+
+        .card-icon {
+            font-size: 2.5em;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            color: #2c3e50;
+            font-size: 1.4em;
+            margin: 10px 0;
+        }
+
+        .card-description {
+            color: #7f8c8d;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .cards-container {
+                grid-template-columns: 1fr;
+                padding: 10px;
+            }
+            .class-title {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="class-title">🏫 2024级21班 班级主页</h1>
+    </div>
+
+    <div class="cards-container">
+        <!-- 直接在HTML中配置卡片 -->
+        <a href="./announcement/index.html" class="card-link" target="_blank">
+            <div class="card">
+                <div class="card-icon">📢</div>
+                <h2 class="card-title">班级公告</h2>
+                <p class="card-description">查看最新班级通知和重要公告</p>
+            </div>
+        </a>
+
+        <a href="./quantify/index.html" class="card-link" target="_blank">
+            <div class="card">
+                <div class="card-icon">📅</div>
+                <h2 class="card-title">量化排行榜</h2>
+                <p class="card-description">本次量化排名查询</p>
+            </div>
+        </a>
+
+        <a href="./Named/index.html" class="card-link" target="_blank">
+            <div class="card">
+                <div class="card-icon">📠</div>
+                <h2 class="card-title">随机点名工具</h2>
+                <p class="card-description">使用内置了21班名单的随机点名工具</p>
+            </div>
+        </a>
+    </div>
+
+</body>
+</html>

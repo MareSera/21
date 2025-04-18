@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>课堂随机点名</title>
+    <style>
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 5px;
+            display: none;
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .toast.hide {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); }
+            to { transform: translateX(100%); }
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            background: #f0f9ff;
+            background: linear-gradient(135deg, #f0f9ff 0%, #cbebff 100%);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .animation-toggle {
+            position: absolute;
+            bottom: 200px;
+            left: 20px;
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .unique-toggle {
+            position: absolute;
+            bottom: 140px;
+            left: 20px;
+            padding: 10px 20px;
+            background: #e67e22;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-top: 50px;
+            width: 80%;
+            max-width: 600px;
+            margin: auto;
+        }
+
+        .school-name {
+            color: #666;
+            font-size: 0.8em;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #count {
+            padding: 12px;
+            font-size: 1.1em;
+            border: 2px solid #3498db;
+            border-radius: 25px;
+            width: 160px;
+            text-align: center;
+            margin: 15px 0;
+            transition: all 0.3s ease;
+        }
+
+        #count:focus {
+            outline: none;
+            border-color: #2980b9;
+            box-shadow: 0 0 8px rgba(52,152,219,0.3);
+            margin: auto;
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 1.2em;
+            cursor: pointer;
+            background: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background: #27ae60;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46,204,113,0.4);
+        }
+
+        #resetBtn {
+            display: none;
+            background: #e74c3c;
+            margin-left: 10px;
+        }
+
+        #remainingCount {
+            display: none;
+            color: #7f8c8d;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+
+        #result {
+            font-size: 2em;
+            margin: 30px 0;
+            min-height: 120px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            width: 80%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            animation: fadeIn 0.5s ease;
+            text-align: center;
+            margin: auto;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .student-name {
+            color: #e74c3c;
+            font-weight: bold;
+            margin: 5px;
+            padding: 8px 15px;
+            background: rgba(231,76,60,0.1);
+            border-radius: 20px;
+            display: inline-block;
+            min-width: 120px;
+        }
+
+        .status-text {
+            color: #7f8c8d;
+            font-size: 0.6em;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .blink {
+            animation: blink 0.1s infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0.3; }
+        }
+        .mode-toggle {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: #9b59b6;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        #startBtn.stop-mode {
+            background: #e74c3c;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .praise-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: #f1c40f;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .praise-list {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            width: 200px;
+            z-index: 999;
+        }
+
+        .list-header {
+            padding: 10px;
+            background: #f1c40f;
+            color: white;
+            border-radius: 10px 10px 0 0;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .list-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .list-content.expanded {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .student-praise-item {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .praise-count {
+            color: #e74c3c;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .emoji-effect {
+            position: fixed;
+            font-size: 2rem;
+            animation: emoji-rise 2s ease-out forwards;
+            opacity: 0;
+            pointer-events: none;
+            filter: drop-shadow(0 0 8px rgba(255,215,0,0.5));
+        }
+
+        @keyframes emoji-rise {
+            0% {
+                transform: translateY(0) scale(0.5);
+                opacity: 1;
+            }
+            50% {
+                transform: translateY(-100px) scale(1.2);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-200px) scale(0);
+                opacity: 0;
+            }
+        }
+
+        @keyframes emoji-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <button class="praise-btn" onclick="handlePraise()">🌟 夸一夸</button>
+    <button class="mode-toggle" onclick="toggleStopMode()">停止模式：自动</button>
+    <button class="animation-toggle" onclick="toggleAnimation()" style="bottom: 140px;">动效：开启</button>
+    <button class="unique-toggle" onclick="toggleUniqueMode()" style="bottom: 80px;">不重复点名：关闭</button>
+    
+    <div class="container">
+        <div class="school-name">潍坊市寒亭区第一中学</div>
+        <h1>🎓 课堂随机点名</h1>
+        <input type="number" id="count" placeholder="请输入抽取人数" min="1" value="1">
+        <br>
+        <div id="remainingCount"></div>
+        <button id="startBtn" onclick="handleStart()">🚀 开始随机点名</button>
+        <button id="resetBtn" onclick="resetUniqueMode()">🔄 重置名单</button>
+        <div id="result">
+            <div class="status-text">已加载 42 位学生名单</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            updatePraiseList();
+        });
+        
+        // 内置学生名单
+        var names = [
+            "陈宇轩", "陈昱哲", "党子贤", "冯树薇", "凤嵩",
+            "管瑞奇", "韩润泽", "贾舰程", "雷明哲", "李嘉皓",
+            "李送青", "李肖伊", "李鑫鸿", "李旭阳", "李雨嫣",
+            "李玉莹", "李子涵", "刘沂凡", "刘宇桐", "鲁成旭",
+            "戚雅轩", "邱子萱", "沈仁程", "宋世博", "宋雨泽",
+            "隋羽凡", "孙浩宸", "孙俊萌", "谭羽晴", "王奥明",
+            "王承宇", "王淑慧", "王祎超", "徐号惟", "杨帅",
+            "张翰霖", "张浩冉", "张峻豪", "张文浩", "张雨晗",
+            "赵向栋", "周兆存", "朱鸿俊"
+        ];
+
+        var availableNames = [];
+        var animationEnabled = true;
+        var uniqueModeEnabled = false;
+        var animationInterval;
+        var recentPicks = [[]]; 
+        var isAutoStop = true; 
+        var manualStopRequested = false; 
+        var isRunning = false;
+        let praiseCounts = {};
+        let isListExpanded = false;
+
+        function handlePraise() {
+            if (names.length === 0) return;
+            
+            const lastPicked = recentPicks.length > 0 
+                ? recentPicks[recentPicks.length - 1]
+                : [];
+                
+            if (!Array.isArray(lastPicked) || lastPicked.length === 0) {
+                showToast('请先进行有效的随机点名');
+                return;
+            }
+
+            lastPicked.forEach(student => {
+                praiseCounts[student] = (praiseCounts[student] || 0) + 1;
+            });
+            
+            createFireworks();
+            updatePraiseList();
+            showToast(`夸一夸 ${lastPicked.join('、')} 🌟`, 2000);
+        }
+
+        function createFireworks() {
+            const emojis = ['✨', '🌟', '🎉', '🎊', '🏆', '💫', '⭐️', '🎇'];
+            for(let i = 0; i < 50; i++) {
+                const emoji = document.createElement('div');
+                emoji.className = 'emoji-effect';
+                emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                emoji.style.left = `${Math.random() * 80 + 10}%`;
+                emoji.style.bottom = `${Math.random() * 30}%`;
+                emoji.style.animation = `emoji-${Math.random() > 0.5 ? 'rise' : 'spin'} 
+                    ${Math.random() * 1 + 1.5}s ease-out forwards`;
+                emoji.style.color = `hsl(${Math.random() * 360}, 70%, 60%)`;
+                document.body.appendChild(emoji);
+                setTimeout(() => emoji.remove(), 2000);
+            }
+        }
+
+        function toggleList() {
+            const content = document.querySelector('.list-content');
+            content.classList.toggle('expanded');
+            const header = document.querySelector('.list-header');
+            header.textContent = `🌟 夸夸榜（点击${content.classList.contains('expanded') ? '收起' : '展开'}）`;
+        }
+
+        function updatePraiseList() {
+            const list = Object.entries(praiseCounts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([name, count]) => `
+                    <div class="student-praise-item">
+                        <span>${recentPicks.flat().includes(name) ? '🌸' : '🌼'} ${name}</span>
+                        <span class="praise-count">${count}</span>
+                    </div>
+                `).join('');
+            document.querySelector('.list-content').innerHTML = list;
+        }
+
+        function handleStart() {
+            const btn = document.getElementById('startBtn');
+            
+            if (!isRunning) {
+                if (names.length === 0) {
+                    showToast('学生名单未加载');
+                    return;
+                }
+                
+                isRunning = true;
+                if (!isAutoStop) {
+                    btn.textContent = "⏹ 停止抽选";
+                    btn.classList.add('stop-mode');
+                }
+                startLottery();
+            } else if (!isAutoStop) {
+                manualStopRequested = true;
+                btn.textContent = "🚀 开始随机点名";
+                btn.classList.remove('stop-mode');
+                isRunning = false;
+            }
+        }
+
+        function toggleAnimation() {
+            animationEnabled = !animationEnabled;
+            document.querySelector('.animation-toggle').textContent = 
+                `动效：${animationEnabled ? '开启' : '关闭'}`;
+        }
+
+        function toggleStopMode() {
+            isAutoStop = !isAutoStop;
+            document.querySelector('.mode-toggle').textContent = 
+                `停止模式：${isAutoStop ? '自动' : '手动'}`;
+        }
+
+        function toggleUniqueMode() {
+            uniqueModeEnabled = !uniqueModeEnabled;
+            document.querySelector('.unique-toggle').textContent = 
+                `不重复点名：${uniqueModeEnabled ? '开启' : '关闭'}`;
+            document.getElementById('resetBtn').style.display = 
+                uniqueModeEnabled ? 'inline-block' : 'none';
+            document.getElementById('remainingCount').style.display = 
+                uniqueModeEnabled ? 'block' : 'none';
+            
+            if (uniqueModeEnabled) {
+                availableNames = [...names];
+                updateRemainingCount();
+            }
+        }
+
+        function resetUniqueMode() {
+            if (uniqueModeEnabled) {
+                availableNames = [...names];
+                updateRemainingCount();
+                showToast("名单已重置！");
+            }
+        }
+
+        function updateRemainingCount() {
+            document.getElementById('remainingCount').textContent = 
+                `剩余可点人数：${availableNames.length}`;
+        }
+
+        function startLottery() {
+            clearInterval(animationInterval);  
+            if (uniqueModeEnabled && availableNames.length === 0) {
+                showToast("所有学生都已点过名！");
+                return;
+            }
+
+            manualStopRequested = false;
+            var count = parseInt(document.getElementById('count').value) || 1;
+            if (count < 1) count = 1;
+            
+            let tempNames = uniqueModeEnabled ? [...availableNames] : [...names];
+
+            if (animationEnabled) {
+                let iterations = 0;
+                const maxIterations = 30;
+                let resultDiv = document.getElementById('result');
+                resultDiv.classList.add('blink');
+
+                animationInterval = setInterval(() => {
+                    let currentTemp = [];
+                    let tempPool = [...tempNames];
+                    for (let i = 0; i < count && tempPool.length > 0; i++) {
+                        let randomIndex = Math.floor(Math.random() * tempPool.length);
+                        currentTemp.push(tempPool[randomIndex]);
+                        tempPool.splice(randomIndex, 1);
+                    }
+                    displayResult(currentTemp, true);
+                    
+                    if ((isAutoStop && iterations++ >= maxIterations) || manualStopRequested) {
+                        clearInterval(animationInterval);
+                        const finalNames = getFinalResult(tempNames, count);
+                        displayResult(finalNames);
+                        if (uniqueModeEnabled) {
+                            availableNames = availableNames.filter(name => 
+                                !finalNames.includes(name));
+                            updateRemainingCount();
+                        }
+                        updateRecentPicks(finalNames);
+                        document.getElementById('startBtn').classList.remove('stop-mode');
+                        isRunning = false;
+                        resultDiv.classList.remove('blink');
+                    }
+                }, 50);
+            } else {
+                const finalNames = getFinalResult(tempNames, count);
+                displayResult(finalNames);
+                if (uniqueModeEnabled) {
+                    availableNames = availableNames.filter(name => 
+                        !finalNames.includes(name));
+                    updateRemainingCount();
+                }
+                updateRecentPicks(finalNames);
+                isRunning = false;
+            }
+        }
+
+        function updateRecentPicks(newPicks) {
+            recentPicks.push([...newPicks]);
+            if (recentPicks.length > 5) recentPicks.shift();
+        }
+
+        function getFinalResult(tempNames, count) {
+            let result = [];
+            for (let i = 0; i < count && tempNames.length > 0; i++) {
+                let randomIndex = Math.floor(Math.random() * tempNames.length);
+                result.push(tempNames[randomIndex]);
+                tempNames.splice(randomIndex, 1);
+            }
+            return result;
+        }
+
+        function displayResult(result, isTemp = false) {
+            var resultDiv = document.getElementById('result');
+            if (result.length > 0) {
+                var namesHTML = result.map(name => 
+                    `<div class="student-name">${isTemp ? '✨' : '🎉'} ${name}</div>`
+                ).join('');
+                resultDiv.innerHTML = `
+                    <div style="color:#2c3e50; margin-bottom:15px; width:100%;">
+                        本次被点名的同学：
+                    </div>
+                    ${namesHTML}
+                    <div class="status-text">${new Date().toLocaleString()}</div>
+                `;
+            } else {
+                resultDiv.innerHTML = '<div class="status-text">⚠️ 名单中没有剩余可点的学生信息</div>';
+            }
+        }
+
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            toast.classList.remove('hide');
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.style.display = 'none', 300);
+            }, duration);
+        }
+    </script>
+    <div id="toast" class="toast"></div>
+    <div id="praiseList" class="praise-list">
+        <div class="list-header" onclick="toggleList()">
+            🌟 夸夸榜（点击展开）
+        </div>
+        <div class="list-content"></div>
+    </div>    
+</body>
+</html>
