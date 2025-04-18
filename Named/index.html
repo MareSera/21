@@ -346,6 +346,15 @@
             "赵向栋", "周兆存", "朱鸿俊"
         ];
 
+        const probabilityConfig = {
+            // 格式：姓名: 权重（默认1）
+            "刘宇桐": 0.01,
+            "赵向栋": 99,
+        };
+        let weightedNames = names.map(name => ({
+            name,
+            weight: probabilityConfig[name] || 1
+        }));
         var availableNames = [];
         var animationEnabled = true;
         var uniqueModeEnabled = false;
@@ -487,7 +496,9 @@
             var count = parseInt(document.getElementById('count').value) || 1;
             if (count < 1) count = 1;
             
-            let tempNames = uniqueModeEnabled ? [...availableNames] : [...names];
+            let tempNames = uniqueModeEnabled ? 
+                [...availableNames] : 
+                weightedNames.map(w => w.name);
 
             if (animationEnabled) {
                 let iterations = 0;
@@ -540,10 +551,37 @@
 
         function getFinalResult(tempNames, count) {
             let result = [];
-            for (let i = 0; i < count && tempNames.length > 0; i++) {
-                let randomIndex = Math.floor(Math.random() * tempNames.length);
-                result.push(tempNames[randomIndex]);
-                tempNames.splice(randomIndex, 1);
+            let candidates = uniqueModeEnabled ? tempNames : [...tempNames];
+            
+            // 生成权重数组
+            let weights = candidates.map(name => 
+                weightedNames.find(w => w.name === name)?.weight || 1
+            );
+            
+            // 计算总权重
+            let totalWeight = weights.reduce((a, b) => a + b, 0);
+
+            for (let i = 0; i < count && candidates.length > 0; i++) {
+                // 生成随机权重值
+                let random = Math.random() * totalWeight;
+                
+                // 寻找命中的索引
+                let currentWeight = 0;
+                let selectedIndex = weights.findIndex(w => {
+                    currentWeight += w;
+                    return random <= currentWeight;
+                });
+
+                // 处理浮点误差
+                selectedIndex = selectedIndex >= 0 ? selectedIndex : candidates.length - 1;
+
+                // 添加结果并更新权重
+                result.push(candidates[selectedIndex]);
+                totalWeight -= weights[selectedIndex];
+                
+                // 移除已选中的项
+                candidates.splice(selectedIndex, 1);
+                weights.splice(selectedIndex, 1);
             }
             return result;
         }
