@@ -397,6 +397,7 @@
     </div>
     
     <script>
+        let frameCount = 0;
         let cheatEnabled = false;
         const CONFIG = {
             PLAYER: {
@@ -614,13 +615,19 @@
         window.addEventListener('blur', () => {
             if (isPlaying) {
                 isPlaying = false;
-                alert('游戏已暂停，点击确定继续');
+                // alert('游戏已暂停，点击确定继续');
                 isPlaying = true;
             }
         });
 
 
         function gameLoop() {
+            if (frameCount > 1e6) frameCount = 0; // 每百万帧重置一次
+            if (isPlaying) {
+                const now = Date.now();
+                update(now);
+                draw();
+            }
             if (isPlaying) {
                 const now = Date.now();
                 update(now);
@@ -666,11 +673,11 @@
                 waveTimer = CONFIG.WAVE.DURATION;
             }
         }
-
+        let lastDashTrailTime = 0;
         // 精确的射击时间控制
         function updatePlayer(now) {
             if (!player) return;
-
+            frameCount++;
 
             const dx = mouse.x - player.pos.x;
             const dy = mouse.y - player.pos.y;
@@ -700,13 +707,14 @@
                     player.pos.add(player.dashDirection.clone().mult(dashSpeed));
                     
                     // 生成残影
-                    if (frameCount % CONFIG.SKILL.TRAIL_INTERVAL === 0) {
-                        player.dashTrail.push({
-                            pos: player.pos.clone(),
-                            alpha: 1.0
-                        });
-                        if (player.dashTrail.length > CONFIG.SKILL.TRAIL_LENGTH) {
-                            player.dashTrail.shift();
+                    if (player.isDashing) {
+                        if (now - lastDashTrailTime > 8) { // 每8ms生成一个残影
+                            player.dashTrail.push({
+                                pos: player.pos.clone(),
+                                timestamp: now
+                            });
+                            lastDashTrailTime = now;
+                            // ...清理旧残影
                         }
                     }
                     
@@ -793,23 +801,14 @@
                 for (let i = enemies.length - 1; i >= 0; i--) {
                     const e = enemies[i];
                     if (e.pos.distanceTo(player.pos) < CONFIG.PLAYER.SIZE + 20) {
-                        player.hp--;
-                        player.invincible = CONFIG.PLAYER.BLINK_DURATION;
-                        createParticles(e.pos, 30, ['#fff', '#f00', '#0ff']);
-                        enemies.splice(i, 1);
-                        if (player.hp <= 0) gameOver();
+                        if (player.invincible <= 0) {
+                            player.hp--;
+                            player.invincible = CONFIG.PLAYER.BLINK_DURATION;
+                            createParticles(e.pos, 30, ['#fff', '#f00', '#0ff']);
+                            enemies.splice(i, 1);
+                            if (player.hp <= 0) gameOver();
+                        }
                     }
-                }
-            }
-            for (let i = enemies.length - 1; i >= 0; i--) {
-                const e = enemies[i];
-                if (e.pos.distanceTo(player.pos) < CONFIG.PLAYER.SIZE + 20) {
-                    player.hp--;
-                    player.invincible = CONFIG.PLAYER.BLINK_DURATION;
-                    createParticles(e.pos, 30, ['#fff', '#f00', '#0ff']);
-                    enemies.splice(i, 1);
-
-                    if (player.hp <= 0) gameOver();
                 }
             }
 
@@ -1062,16 +1061,15 @@
             if (!player) return;
             
             // 绘制冲刺残影
-            if (player.isDashing) {
-                player.dashTrail.forEach((trail, index) => {
-                    const alpha = 0.7 * (index / player.dashTrail.length);
+            player.dashTrail.forEach((trail) => {
+                    const age = Date.now() - trail.timestamp;
+                    const alpha = Math.max(0, 1 - age / 200); // 200ms内渐隐
                     ctx.strokeStyle = `rgba(0,255,255,${alpha})`;
-                    ctx.lineWidth = 4;
+                    ctx.lineWidth = 4 * alpha;
                     ctx.beginPath();
                     ctx.arc(trail.pos.x, trail.pos.y, CONFIG.PLAYER.SIZE, 0, Math.PI * 2);
                     ctx.stroke();
                 });
-            }
 
             const shouldBlink = player.invincible > 0 && (player.invincible % 8 < 4);
             const alpha = shouldBlink ? 0.3 : 1;
