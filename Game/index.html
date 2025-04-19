@@ -674,7 +674,6 @@
             }
         }
         let lastDashTrailTime = 0;
-        // 精确的射击时间控制
         function updatePlayer(now) {
             if (!player) return;
             frameCount++;
@@ -718,15 +717,23 @@
                         }
                     }
                     
-                    // 结束冲刺
-                    if (--player.invincible <= 0) {
-                        player.isDashing = false;
+                    if (player.invincible-- <= 0) {
+                            player.isDashing = false;
+                            // 速度重置保证移动恢复
+                            player.speed = player.baseSpeed; 
+                        }
+                    } else {
+                        // 普通移动时确保使用基础速度
+                        move.normalize().mult(player.baseSpeed);
+                        player.pos.add(move);
                     }
-                } else {
-                    // 普通移动
-                    move.normalize().mult(player.speed);
-                    player.pos.add(move);
-                }
+
+                        // 移动输入响应性检查
+                    const isMoving = move.x !== 0 || move.y !== 0;
+                    if (!player.isDashing && isMoving) {
+                        // 确保移动方向立即更新
+                        player.dashDirection = move.clone().normalize();
+                    }
 
             // 边界限制
             player.pos.x = Math.max(0, Math.min(canvas.width, player.pos.x));
