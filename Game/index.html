@@ -83,7 +83,27 @@
             height: 100%;
             background: linear-gradient(90deg, #00ffff, #0088ff);
             border-radius: 8px;
-            transition: width 0.3s;
+            transition: width 0.1s linear; 
+        }
+        #skillBar::after {
+            content: "SHIFT";
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #00ffff;
+            font-family: 'Courier New';
+            font-size: 14px;
+            text-shadow: 0 0 10px #00ffff;
+        }
+        .skill-ready #skillProgress {
+            animation: pulseGlow 0.8s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 5px #00ffff; }
+            50% { box-shadow: 0 0 20px #00ffff; }
+            100% { box-shadow: 0 0 5px #00ffff; }
         }
 
         #startMenu {
@@ -183,7 +203,6 @@
             cursor: pointer;
             z-index: 1000;
             animation: textGlow 2s infinite;
-            /* 移除背景和边框 */
             background: none;
             border: none;
             width: auto;
@@ -193,7 +212,7 @@
             transition: all 0.3s;
         }
 
-        /* 弹窗文字颜色修正 */
+        /* 弹窗文字颜色 */
         .popupContent {
             color: #fff;
             /* 强制设置文字颜色 */
@@ -253,9 +272,9 @@
             margin: 0 5px;
         }
 
-        .buff-sample.cyan {
-            background: #00ffff;
-            box-shadow: 0 0 8px #00ffff;
+        .buff-sample.red {
+            background: #ff0000;
+            box-shadow: 0 0 8px #ff0000;
         }
 
         .buff-sample.green {
@@ -312,6 +331,10 @@
             font-size: 32px;
             cursor: pointer;
         }
+        .startButton[data-cheat] {
+            border-color: #00ff00 !important;
+            box-shadow: 0 0 30px #00ff00 !important;
+        }
     </style>
 </head>
 
@@ -325,7 +348,8 @@
         <div>得分: <span id="score">0</span></div>
         <div>连击: <span id="combo">x1</span></div>
         <div>血量: <span id="hp">■■■</span></div>
-        <div>增益: <span id="buff">None</span></div>
+        <div>增益: <span id="buff">无</span></div>
+        <div>DEBUG: <span id="debug"></span></div>
     </div>
 
     <div id="waveInfo">
@@ -362,7 +386,7 @@
                 <ul class="tutorialList">
                     <li>连击系统：连续击杀保持连击倍数（最高x8）</li>
                     <li>增益掉落：击败敌人概率掉落强化光球
-                        <span class="buff-sample cyan"></span>火力强化
+                        <span class="buff-sample red"></span>火力强化
                         <span class="buff-sample green"></span>生命恢复
                         <span class="buff-sample blue"></span>速度爆发
                     </li>
@@ -373,6 +397,7 @@
     </div>
     
     <script>
+        let cheatEnabled = false;
         const CONFIG = {
             PLAYER: {
                 SIZE: 24,
@@ -386,7 +411,9 @@
                 SIZE: 6,
                 SPREAD: 0.15,
                 FIRE_RATE: 200,
-                BASE_COUNT: 3
+                BASE_COUNT: 3,
+                MAX_COUNT: 8,    // 最大弹道数量
+                MAX_SPEED: 18    // 最大子弹速度
             },
             ENEMY: {
                 TYPES: 5,
@@ -409,9 +436,11 @@
                 LIFE: 45
             },
             SKILL: {
-                COOLDOWN: 180,      // 冷却帧数
-                DASH_MULTIPLIER: 3, // 速度加成倍数
-                SAFE_DURATION: 30   // 冲刺无敌帧数
+                COOLDOWN: 180,
+                DASH_MULTIPLIER: 3,
+                SAFE_DURATION: 30,
+                TRAIL_INTERVAL: 3,  // 残影生成间隔帧数
+                TRAIL_LENGTH: 8     // 最大残影数量
             }
         };
 
@@ -443,19 +472,22 @@
             currentWave = 1, waveTimer = CONFIG.WAVE.DURATION, activeBuff = null;
 
         function init() {
+
+            
+
             console.log('Help button:', document.getElementById('helpBtn'));
             console.log('Tutorial popup:', document.getElementById('tutorialPopup'));
             console.log('Close button:', document.querySelector('#tutorialPopup .closeBtn'));
     
-            window.addEventListener('resize', resize);  // 添加resize监听
+            window.addEventListener('resize', resize);  // resize监听
             canvas = document.getElementById('game');
             ctx = canvas.getContext('2d');
 
-            // 修复1：添加canvas焦点获取
+            // canvas焦点获取
             canvas.tabIndex = 1;
             canvas.focus();
 
-            // 修复2：优化事件监听
+            // 事件监听
             canvas.addEventListener('mousemove', e => {
                 const rect = canvas.getBoundingClientRect();
                 const scaleX = canvas.width / rect.width;
@@ -467,7 +499,7 @@
             canvas.addEventListener('mousedown', () => mouse.down = true);
             canvas.addEventListener('mouseup', () => mouse.down = false);
 
-            // 修复3：优化键盘事件处理
+            // 键盘事件处理
             const validKeys = new Set(['w', 's', 'a', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Shift']);
             document.addEventListener('keydown', e => {
                 if (validKeys.has(e.key)) keys[e.key] = true;
@@ -509,6 +541,31 @@
                 }
             });
 
+            //作弊码开始
+            let cheatInput = '';
+            const targetCode = 'lyt123123';
+            
+            document.addEventListener('keydown', (e) => {
+                if (!document.getElementById('startMenu').style.display) {
+                    cheatInput += e.key.toLowerCase();
+                    if (cheatInput.length > targetCode.length) {
+                        cheatInput = cheatInput.slice(-targetCode.length);
+                    }
+                    
+                    if (cheatInput === targetCode) {
+                        cheatEnabled = true;
+                        document.querySelector('.startButton').textContent = 'CHEAT MODE [已激活]';
+                        document.querySelector('.startButton').style.backgroundColor = '#00ff00';
+                        setTimeout(() => {
+                            document.querySelector('.startButton').textContent = 'START GAME';
+                            document.querySelector('.startButton').style.backgroundColor = '';
+                        }, 2000);
+                        cheatInput = '';
+                    }
+                }
+            });
+            //作弊码关闭
+
         }
 
         function startGame() {
@@ -520,19 +577,23 @@
             // 隐藏开始菜单
             document.getElementById('startMenu').style.display = 'none';
             document.getElementById('startMenu').style.display = 'none';
+            document.getElementById('hp').textContent = cheatEnabled ? '♾️' : '■■■';
             document.getElementById('buff').textContent = '无'; // 重置增益显示
             isPlaying = true;
 
             player = {
                 pos: new Vector(canvas.width / 2, canvas.height / 2),
-                hp: 3,
-                maxHp: 3,
+                hp: cheatEnabled ? 9999 : 3,
+                maxHp: cheatEnabled ? 9999 : 3,
                 invincible: 0,
                 bulletCount: CONFIG.BULLET.BASE_COUNT,
                 baseSpeed: CONFIG.PLAYER.SPEED,
                 speed: CONFIG.PLAYER.SPEED,
                 lastFire: 0,
-                trail: []
+                trail: [],
+                dashDirection: new Vector(0, 0),  // 冲刺方向
+                dashTrail: [],                    // 冲刺残影
+                isDashing: false                  // 冲刺状态标志
             };
 
             // 重置所有状态
@@ -586,6 +647,14 @@
             document.getElementById('kills').textContent = kills;
             document.getElementById('score').textContent = score;
             document.getElementById('hp').textContent = '■'.repeat(player.hp);
+
+            document.getElementById('debug').textContent = 
+                `弹道:${player.bulletCount} 速度:${CONFIG.BULLET.SPEED.toFixed(1)}`;
+
+            document.getElementById('hp').textContent = cheatEnabled ? 
+                '♾️' : 
+                '■'.repeat(player.hp);
+
         }
 
         function updateWave() {
@@ -598,7 +667,7 @@
             }
         }
 
-        // 修复6：精确的射击时间控制
+        // 精确的射击时间控制
         function updatePlayer(now) {
             if (!player) return;
 
@@ -613,15 +682,43 @@
             if (keys.a || keys.ArrowLeft) move.x -= 1;
             if (keys.d || keys.ArrowRight) move.x += 1;
 
-            // 冲刺逻辑
-            if (keys.Shift && dashCooldown <= 0) {
-                move.mult(3);
-                dashCooldown = 180;
-                player.invincible = 30;  // 冲刺时短暂无敌
-            }
+                // 冲刺逻辑
+                if (keys.Shift && dashCooldown <= 0 && move.length() > 0) {
+                    // 记录冲刺方向
+                    player.dashDirection = move.clone().normalize();
+                    player.isDashing = true;
+                    dashCooldown = CONFIG.SKILL.COOLDOWN;
+                    player.invincible = CONFIG.SKILL.SAFE_DURATION;
+                    
+                    // 清空残影
+                    player.dashTrail = [];
+                }
 
-            move.normalize().mult(player.speed);
-            player.pos.add(move);
+                // 冲刺状态移动处理
+                if (player.isDashing) {
+                    const dashSpeed = player.baseSpeed * CONFIG.SKILL.DASH_MULTIPLIER;
+                    player.pos.add(player.dashDirection.clone().mult(dashSpeed));
+                    
+                    // 生成残影
+                    if (frameCount % CONFIG.SKILL.TRAIL_INTERVAL === 0) {
+                        player.dashTrail.push({
+                            pos: player.pos.clone(),
+                            alpha: 1.0
+                        });
+                        if (player.dashTrail.length > CONFIG.SKILL.TRAIL_LENGTH) {
+                            player.dashTrail.shift();
+                        }
+                    }
+                    
+                    // 结束冲刺
+                    if (--player.invincible <= 0) {
+                        player.isDashing = false;
+                    }
+                } else {
+                    // 普通移动
+                    move.normalize().mult(player.speed);
+                    player.pos.add(move);
+                }
 
             // 边界限制
             player.pos.x = Math.max(0, Math.min(canvas.width, player.pos.x));
@@ -670,7 +767,7 @@
             });
         }
 
-        // 修复7：优化敌人生成逻辑
+        // 敌人生成逻辑
         function createEnemy() {
             const type = Math.floor(Math.random() * CONFIG.ENEMY.TYPES);
             return {
@@ -690,6 +787,20 @@
 
         function checkCollisions() {
             // 玩家与敌人碰撞
+            if (player.invincible > 0) {
+                player.invincible--; // 持续减少无敌时间
+            } else {
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    const e = enemies[i];
+                    if (e.pos.distanceTo(player.pos) < CONFIG.PLAYER.SIZE + 20) {
+                        player.hp--;
+                        player.invincible = CONFIG.PLAYER.BLINK_DURATION;
+                        createParticles(e.pos, 30, ['#fff', '#f00', '#0ff']);
+                        enemies.splice(i, 1);
+                        if (player.hp <= 0) gameOver();
+                    }
+                }
+            }
             for (let i = enemies.length - 1; i >= 0; i--) {
                 const e = enemies[i];
                 if (e.pos.distanceTo(player.pos) < CONFIG.PLAYER.SIZE + 20) {
@@ -755,7 +866,7 @@
                         e.pos.add(dir.mult(e.speed));
                         break;
 
-                    case 1: // 盘旋型（降低速度）
+                    case 1: // 盘旋型
                         e.angle += e.speed * 0.01;
                         e.pos.x = canvas.width / 2 + Math.cos(e.angle) * 300;
                         e.pos.y = canvas.height / 2 + Math.sin(e.angle) * 300;
@@ -804,7 +915,7 @@
                 if (activeBuff.timer <= 0) {
                     removeBuff(activeBuff.type);
                     activeBuff = null;
-                    document.getElementById('buff').textContent = 'None';
+                    document.getElementById('buff').textContent = '无';
                 }
             }
 
@@ -820,8 +931,15 @@
             activeBuff = { type, timer: CONFIG.BUFF.DURATION };
             switch (type) {
                 case 0:
-                    player.bulletCount += 2;
-                    document.getElementById('buff').textContent = '火力增强+';
+                        player.bulletCount = Math.min(
+                        player.bulletCount + 2,
+                        CONFIG.BULLET.MAX_COUNT
+                    );
+                    CONFIG.BULLET.SPEED = Math.min(
+                        CONFIG.BULLET.SPEED + 1.5,
+                        CONFIG.BULLET.MAX_SPEED
+                    );
+                    document.getElementById('buff').textContent = '火力强化';
                     break;
                 case 1:
                     player.maxHp = Math.min(CONFIG.PLAYER.MAX_HP, player.maxHp + 1);
@@ -895,12 +1013,18 @@
 
         function updateSkills() {
             if (dashCooldown > 0) dashCooldown--;
-            const progress = (1 - dashCooldown / 180) * 100;
+    
+            const skillBar = document.getElementById('skillBar');
+            const progress = (1 - dashCooldown/CONFIG.SKILL.COOLDOWN) * 100;
+            
+            // 更新技能条样式
+            if (progress >= 100) {
+                skillBar.classList.add('skill-ready');
+            } else {
+                skillBar.classList.remove('skill-ready');
+            }
+            
             document.getElementById('skillProgress').style.width = `${progress}%`;
-
-            // 动态颜色变化（示例）
-            const hue = progress * 1.2;
-            skillProgress.style.background = `hsl(${hue}, 100%, 50%)`;
         }
         function updateCombo() {
             if (comboTimeout > 0) {
@@ -936,9 +1060,24 @@
 
         function drawPlayer() {
             if (!player) return;
+            
+            // 绘制冲刺残影
+            if (player.isDashing) {
+                player.dashTrail.forEach((trail, index) => {
+                    const alpha = 0.7 * (index / player.dashTrail.length);
+                    ctx.strokeStyle = `rgba(0,255,255,${alpha})`;
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.arc(trail.pos.x, trail.pos.y, CONFIG.PLAYER.SIZE, 0, Math.PI * 2);
+                    ctx.stroke();
+                });
+            }
+
+            const shouldBlink = player.invincible > 0 && (player.invincible % 8 < 4);
+            const alpha = shouldBlink ? 0.3 : 1;
 
             // 玩家本体
-            ctx.strokeStyle = player.invincible % 6 < 3 ? '#fff' : 'rgba(255,255,255,0.2)';
+            ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
             ctx.lineWidth = 4;
             ctx.beginPath();
             ctx.arc(player.pos.x, player.pos.y, CONFIG.PLAYER.SIZE, 0, Math.PI * 2);
